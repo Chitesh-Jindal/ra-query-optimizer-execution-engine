@@ -1,6 +1,6 @@
-# Relational Algebra Based Query Optimizer and Execution Engine
+# Cost-Based Relational Algebra Query Optimizer and Execution Engine
 
-A C++ DBMS project that parses simplified SQL queries, converts them into Relational Algebra trees, applies query optimization using selection pushdown, and executes the optimized query on CSV-based tables.
+A C++ DBMS project that parses simplified SQL queries, converts them into Relational Algebra trees, applies query optimization using selection pushdown, estimates query execution cost, and executes the optimized query on CSV-based tables.
 
 ---
 
@@ -8,54 +8,61 @@ A C++ DBMS project that parses simplified SQL queries, converts them into Relati
 
 This project demonstrates the internal working of a basic database query processor.
 
-Instead of directly executing SQL, the system first converts a SQL query into a Relational Algebra tree. The tree is then optimized using query optimization rules and finally executed on CSV files that act as database tables.
+Instead of directly executing SQL, the system first converts a simplified SQL query into a Relational Algebra tree. The original tree is analyzed, its estimated execution cost is calculated, and then query optimization is applied. After optimization, the new tree and its cost are displayed, allowing comparison between the original and optimized query plans.
 
-The project is built as a learning-focused DBMS engine to understand how SQL parsing, relational algebra, query optimization, and query execution work together.
+CSV files are used as database tables, making the project easy to run and understand without requiring an external DBMS.
 
 ---
 
 ## Main Objectives
 
-- Parse simplified SQL queries.
-- Generate and display the original Relational Algebra tree.
-- Apply query optimization using selection pushdown.
-- Display the optimized Relational Algebra tree.
-- Execute the optimized query plan.
-- Display the final query result.
+* Parse simplified SQL queries.
+* Generate the original Relational Algebra tree.
+* Estimate the cost of the original query tree.
+* Apply query optimization using selection pushdown.
+* Generate the optimized Relational Algebra tree.
+* Estimate the cost of the optimized query tree.
+* Compare original cost vs optimized cost.
+* Execute the optimized query plan on CSV-based tables.
+* Display the final query result.
 
 ---
 
 ## Features
 
-- SQL query parsing
-- Relational Algebra tree generation
-- Original RA tree display
-- Optimized RA tree display
-- Selection pushdown optimization
-- Execution of relational algebra operators
-- CSV-based table loading
-- Support for multiple `AND` conditions in `WHERE`
-- Basic numeric and string condition handling
-- Final query result display in tabular format
+* SQL query parsing
+* Relational Algebra tree generation
+* Original and optimized query tree display
+* Selection pushdown optimization
+* Cost estimation for original query plan
+* Cost estimation for optimized query plan
+* Page-based I/O cost model
+* Comparison of original cost vs optimized cost
+* Execution of relational algebra operators
+* CSV-based table loading
+* Support for multiple `AND` conditions in `WHERE`
+* Basic numeric and string condition handling
+* Final query result display in tabular format
 
 ---
 
 ## Technologies Used
 
-- C++
-- STL vectors
-- STL maps
-- File handling
-- CSV files
-- Relational Algebra
-- Query Optimization
+* C++
+* STL vectors
+* STL maps
+* File handling
+* CSV files
+* Relational Algebra
+* Query Optimization
+* Cost-Based Query Evaluation
 
 ---
 
 ## Project Structure
 
 ```text
-ra-query-optimizer-execution-engine/
+Cost-Based-Relational-Algebra-Optimizer/
 │
 ├── main.cpp
 ├── EMP.csv
@@ -65,6 +72,7 @@ ra-query-optimizer-execution-engine/
 ├── ASSIGNMENT.csv
 ├── WORKS_ON.csv
 ├── sample_queries.txt
+├── COST_CALCULATION.md
 ├── README.md
 ├── LICENSE
 └── .gitignore
@@ -94,9 +102,9 @@ SELECT EMP.NAME,DEPT.NAME FROM EMP JOIN DEPT ON EMP.DEPTID=DEPT.ID WHERE EMP.AGE
 
 ## Important Input Rules
 
-- SQL keywords should be written in uppercase.
-- Column names should match the CSV headers exactly.
-- Table-qualified column names should be used.
+* SQL keywords should be written in uppercase.
+* Column names should match the CSV headers exactly.
+* Table-qualified column names should be used.
 
 Example:
 
@@ -105,7 +113,7 @@ EMP.NAME
 DEPT.ID
 ```
 
-- String values should use straight single quotes.
+* String values should use straight single quotes.
 
 Correct:
 
@@ -119,7 +127,7 @@ Incorrect:
 EMP.CITY=‘DELHI’
 ```
 
-- Queries should end with a semicolon.
+* Queries should end with a semicolon.
 
 ---
 
@@ -128,7 +136,7 @@ EMP.CITY=‘DELHI’
 ### 1. Compile the program
 
 ```bash
-g++ main.cpp -o engine
+g++ -std=c++17 main.cpp -o engine
 ```
 
 ### 2. Run the executable
@@ -147,28 +155,34 @@ SELECT EMP.NAME,EMP.AGE,EMP.SALARY FROM EMP WHERE EMP.AGE>25 AND EMP.SALARY>6000
 
 ## Sample Queries
 
-### Query 1: Simple selection with multiple conditions
+### Query 1: Simple Selection
+
+```sql
+SELECT EMP.NAME,EMP.AGE FROM EMP WHERE EMP.AGE>25;
+```
+
+### Query 2: Selection with Multiple Conditions
 
 ```sql
 SELECT EMP.NAME,EMP.AGE,EMP.SALARY FROM EMP WHERE EMP.AGE>25 AND EMP.SALARY>60000;
 ```
 
-### Query 2: String condition
+### Query 3: String Condition
 
 ```sql
 SELECT EMP.NAME,EMP.CITY FROM EMP WHERE EMP.CITY='DELHI';
 ```
 
-### Query 3: Join with selection condition
+### Query 4: Join with Selection
 
 ```sql
 SELECT EMP.NAME,DEPT.NAME FROM EMP JOIN DEPT ON EMP.DEPTID=DEPT.ID WHERE EMP.AGE>25;
 ```
 
-### Query 4: Join with department filter
+### Query 5: Join with Conditions on Both Tables
 
 ```sql
-SELECT EMP.NAME,DEPT.NAME,DEPT.LOCATION FROM EMP JOIN DEPT ON EMP.DEPTID=DEPT.ID WHERE DEPT.LOCATION='MUMBAI';
+SELECT EMP.NAME,EMP.SALARY,DEPT.NAME,DEPT.LOCATION FROM EMP JOIN DEPT ON EMP.DEPTID=DEPT.ID WHERE EMP.AGE>25 AND EMP.SALARY>60000 AND DEPT.LOCATION='BANGALORE';
 ```
 
 ---
@@ -192,10 +206,16 @@ PROJECT(EMP.NAME,DEPT.NAME)
       TABLE(DEPT)
 ```
 
-After optimization, it displays the optimized tree:
+Then it calculates the estimated cost of the original query tree:
 
 ```text
-Optimised RA tree :
+Original Cost: 88 pages
+```
+
+After applying selection pushdown, the optimized tree is displayed:
+
+```text
+Optimized RA tree :
 PROJECT(EMP.NAME,DEPT.NAME)
   JOIN(EMP.DEPTID=DEPT.ID)
     SELECT(EMP.AGE>25)
@@ -203,7 +223,36 @@ PROJECT(EMP.NAME,DEPT.NAME)
     TABLE(DEPT)
 ```
 
-Then it executes the optimized tree and displays the final result.
+Then it calculates the estimated cost of the optimized query tree:
+
+```text
+Optimized Cost: 68 pages
+```
+
+Finally, the optimized query tree is executed and the final result is displayed.
+
+---
+
+## Cost Estimation Model
+
+The project uses a simplified page-based I/O cost model.
+
+Cost represents the estimated number of disk pages read or written during query execution. It is not exact runtime, but an approximation used to compare different query plans.
+
+The basic cost formula is:
+
+```text
+pages = ceil((number_of_rows × number_of_columns × column_size) / page_size)
+```
+
+The cost model considers:
+
+* Number of rows produced by each operator
+* Number of output columns
+* Estimated number of pages read or written
+* Effect of filtering rows before join operations
+
+This allows the system to compare the original query plan with the optimized query plan.
 
 ---
 
@@ -213,7 +262,7 @@ Then it executes the optimized tree and displays the final result.
 
 Selection pushdown is a query optimization technique where filtering conditions are moved closer to the base tables before performing join operations.
 
-This reduces the number of rows participating in the join operation and improves query execution efficiency.
+This reduces the number of rows participating in the join operation and can reduce the estimated execution cost.
 
 Before optimization:
 
@@ -235,7 +284,7 @@ PROJECT
     TABLE
 ```
 
-This optimization is applied when the `WHERE` condition belongs to only one table.
+This optimization is applied when a `WHERE` condition belongs to only one table.
 
 ---
 
@@ -245,12 +294,12 @@ The execution engine recursively evaluates the Relational Algebra tree.
 
 Each node type performs a specific operation:
 
-| Node Type | Function |
-|---|---|
-| TABLE | Loads a relation from the CSV-based database |
-| SELECT | Filters rows based on conditions |
-| PROJECT | Selects only required columns |
-| JOIN | Combines two relations based on a join condition |
+| Node Type | Function                                         |
+| --------- | ------------------------------------------------ |
+| TABLE     | Loads a relation from the CSV-based database     |
+| SELECT    | Filters rows based on conditions                 |
+| PROJECT   | Selects only required columns                    |
+| JOIN      | Combines two relations based on a join condition |
 
 ---
 
@@ -260,8 +309,8 @@ The project uses CSV files as database tables.
 
 Each CSV file contains:
 
-- First row: column names
-- Remaining rows: table records
+* First row: column names
+* Remaining rows: table records
 
 Example:
 
@@ -274,26 +323,28 @@ EMP.ID,EMP.NAME,EMP.DEPTID,EMP.AGE,EMP.SALARY,EMP.CITY
 
 ## Current Limitations
 
-- Only simplified SQL syntax is supported.
-- SQL keywords should be written in uppercase.
-- Nested queries are not supported.
-- Aggregate functions are not supported.
-- `ORDER BY` and `GROUP BY` are not supported.
-- Projection pushdown is not fully implemented.
-- The parser is designed for controlled academic demo queries.
+* Only simplified SQL syntax is supported.
+* SQL keywords should be written in uppercase.
+* Nested queries are not supported.
+* Aggregate functions are not supported.
+* `ORDER BY` and `GROUP BY` are not supported.
+* Projection pushdown is not fully implemented.
+* The parser is designed for controlled academic demo queries.
+* The cost model is simplified and used for comparison, not exact runtime prediction.
 
 ---
 
 ## Future Scope
 
-- Projection pushdown optimization
-- Support for lowercase SQL keywords
-- Support for aliases
-- Support for aggregate functions
-- Support for `ORDER BY` and `GROUP BY`
-- Improved SQL parser
-- Better error handling
-- GUI or web-based interface for query input and output
+* Projection pushdown optimization
+* Support for lowercase SQL keywords
+* Support for table aliases
+* Support for aggregate functions
+* Support for `ORDER BY` and `GROUP BY`
+* Improved SQL parser
+* Improved error handling
+* More realistic cost estimation model
+* GUI or web-based interface for query input and output
 
 ---
 
@@ -301,12 +352,13 @@ EMP.ID,EMP.NAME,EMP.DEPTID,EMP.AGE,EMP.SALARY,EMP.CITY
 
 This project helped in understanding:
 
-- How SQL queries are internally represented
-- How Relational Algebra trees are generated
-- How query optimization improves execution
-- How selection pushdown works
-- How relational operators can be executed using C++
-- How a basic DBMS query engine can be designed from scratch
+* How SQL queries are internally represented
+* How Relational Algebra trees are generated
+* How query optimization improves execution
+* How selection pushdown works
+* How query cost can be estimated using a page-based model
+* How relational operators can be executed using C++
+* How a basic DBMS query engine can be designed from scratch
 
 ---
 
