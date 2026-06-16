@@ -166,7 +166,7 @@ int checkCondition(string condition, string leftname, string rightname){ // to c
 }
 
 
-bool pushdownpossible(RAnode* root){
+bool pushdownpossible(RAnode* root){//checks if selection pushdown needed
     if(root==nullptr || root->type!=NodeType::PROJECT)
         return false;
     if(root->left==nullptr || root->left->type!=NodeType::SELECT)
