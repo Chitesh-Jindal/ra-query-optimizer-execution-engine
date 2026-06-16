@@ -1,4 +1,4 @@
-# Cost-Based Relational Algebra Query Optimizer and Execution Engine
+# SQL Query Optimizer and Execution Engine with Cost Estimation
 
 A C++ DBMS project that parses simplified SQL queries, converts them into Relational Algebra trees, applies query optimization using selection pushdown, estimates query execution cost, and executes the optimized query on CSV-based tables.
 
