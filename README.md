@@ -136,7 +136,7 @@ EMP.CITY=‘DELHI’
 ### 1. Compile the program
 
 ```bash
-g++ -std=c++17 main.cpp -o engine
+g++ main.cpp -o engine
 ```
 
 ### 2. Run the executable
